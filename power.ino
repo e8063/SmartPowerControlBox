@@ -1,10 +1,11 @@
-#define voltageConst 1.18
+#define voltageConst 1.67
 
 double read_current(){//電圧から電流を計算する関数
   int data = analogRead(current_vol);
   double voltage;
   voltage = (double)data/1024.0;//0.0~1.0
-  return voltage*73.3-73.3/2.0;//peak
+  return voltage*36.7-36.7/2.0;//peak
+  //return voltage*73.3-73.3/2.0;//電流センサが30Aの場合はこれを使う
 }
 
 double read_voltage(){//分圧により1/2に減圧
@@ -41,7 +42,9 @@ void sample(){
       now_power = -now_power;
       powerFactor = -powerFactor;
     }
-
+    if (now_voltage < 10)
+      now_voltage = 0.0;
+      
     if (now_power < NOISE_WATT_THRESHOLD) { //ノイズ
       now_current = 0;
       now_power = 0;
