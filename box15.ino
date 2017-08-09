@@ -149,8 +149,6 @@ void setup(){
   
 }
 
-byte count;
-
 void loop(){//LCDの表示を制御
   bool print_flag;
   switch(mode){
@@ -176,7 +174,6 @@ void loop(){//LCDの表示を制御
     case 1:
       print_flag = false;
       lcd_clear();
-      count = 1;
       lcd.print(testmode);
       lcd.setCursor(0, 1);
       lcd.print(enter);
@@ -208,7 +205,6 @@ void loop(){//LCDの表示を制御
           lcd.print(selectmanagement);
         }
         delay(400);
-        count++;
       }
       break;
 
@@ -282,7 +278,6 @@ void loop(){//LCDの表示を制御
     case 2:
       print_flag = false;
       lcd_clear();
-      count = 1;
       lcd.print(management);
       lcd.setCursor(0, 1);
       lcd.print(enter);
@@ -314,7 +309,6 @@ void loop(){//LCDの表示を制御
           lcd.print(selectsetting);
         }
         delay(400);
-        count++;
       }
       break;
 
@@ -415,7 +409,6 @@ void loop(){//LCDの表示を制御
     case 30:
       print_flag = false;
       lcd_clear();
-      count = 1;
       lcd.print(lcdbacklight);
       lcd.setCursor(0, 1);
       lcd.print(alwayson);
@@ -450,7 +443,6 @@ void loop(){//LCDの表示を制御
           lcd.print(ecomode);
         }
         delay(400);
-        count++;
       }
       break;
       

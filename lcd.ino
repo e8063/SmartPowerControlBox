@@ -21,7 +21,6 @@ void wait_lcd_func(){
     unsigned int start_time = millis();
     while(true){
       if(start_time + wait_time < millis()){
-        count = 0;
         break;
       }
       if(wait_lcd){
