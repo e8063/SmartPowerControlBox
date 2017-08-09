@@ -1,4 +1,4 @@
-#define wait_time 1500//ms
+#define wait_time 900//ms
 
 void utf_del_uni(char *s){//カナの文字コードをLCD用に変換する関数
     byte i=0;
@@ -20,10 +20,12 @@ void wait_lcd_func(){
     wait_lcd = false;
     unsigned int start_time = millis();
     while(true){
-      if(start_time + wait_time > millis())
+      if(start_time + wait_time < millis()){
+        count = 0;
         break;
+      }
       if(wait_lcd){
-        start_time = start_time + wait_time;//追加でwaitが入った場合に待機時間を延長
+        start_time = millis();//追加でwaitが入った場合に待機時間を延長
         wait_lcd = false;
       }
       delay(100);
@@ -31,19 +33,9 @@ void wait_lcd_func(){
   }
 }
 
-void lcd_print_int(int data){//トリガーdelayを実装したprint関数(int型)
+void lcd_clear(){//トリガーdelayを実装したclear関数
   wait_lcd_func();
-  lcd.print(data);
-}
-
-void lcd_print_double(double data){//トリガーdelayを実装したprint関数(double型)
-  wait_lcd_func();
-  lcd.print(data);
-}
-
-void lcd_print_string(String data){//トリガーdelayを実装したprint関数(String型)
-  wait_lcd_func();
-  lcd.print(data);
+  lcd.clear();
 }
 
 void back_light_off(){//バックライトの消灯を行う関数

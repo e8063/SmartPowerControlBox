@@ -1,4 +1,5 @@
 #define voltageConst 1.67
+#define NOISE_WATT_THRESHOLD 0.5
 
 double read_current(){//電圧から電流を計算する関数
   int data = analogRead(current_vol);

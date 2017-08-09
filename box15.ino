@@ -5,13 +5,11 @@
 //#include<avr/wdt.h>
 #include <Scheduler.h>
 #include <TimerOne.h>
-#include <MsTimer2.h>
 XBeeLibrary XBee;
 
 /*電力計測関係*/
 #define SAMPLE_PER_SEC 600
 #define SAMPLE_PERIOD_USEC (1000000 / SAMPLE_PER_SEC)
-#define NOISE_WATT_THRESHOLD 0.5           // これ未満のW数ならノイズとして捨てる
 
 /*入出力関係*/
 #define button_select A0//選択ボタン接続端子
@@ -64,7 +62,7 @@ char exitreturn[] = "ﾓﾄﾞﾙ:return";
 char currentstring[] = ">ﾃﾞﾝﾘｭｳ";
 char voltagestring[] = ">ﾃﾞﾝｱﾂ";
 
-int mode = 100;
+byte mode = 100;
 /*
   0 is Power mode 
   -> 100 is Power mode(Non Standby)  
@@ -72,14 +70,6 @@ int mode = 100;
   -> 10 all on 
   -> 11 blinks
   2 is configure mode 
-*/
-
-int pattern_mode = 0;//2017/7/25 スケジューラの動作不調により廃止
-/*
-  0 is Do nothing
-  1 is lcd blinks
-  2 is xbee blinks
-  other(default) already used
 */
 
 void char_setup(){
@@ -136,19 +126,19 @@ void setup(){
   
   char text[] = "ﾏｲﾂﾞﾙｺｳｾﾝ";
   utf_del_uni(text);
-  lcd_print_string(text);
+  lcd.print(text);
 
   lcd.setCursor(0, 1);
   char text1[] = "4E ｿｳｿﾞｳｺｳｶﾞｸ";
   utf_del_uni(text1);
-  lcd_print_string(text1);
+  lcd.print(text1);
   
   delay(2000);
   lcd.clear();
-  lcd_print_string("Smart Power");
+  lcd.print("Smart Power");
 
   lcd.setCursor(1, 1);
-  lcd_print_string("Control Unit");
+  lcd.print("Control Unit");
 
   delay(2000);
   
@@ -159,8 +149,9 @@ void setup(){
   
 }
 
+byte count;
+
 void loop(){//LCDの表示を制御
-  unsigned int count;
   bool print_flag;
   switch(mode){
     case 0:
@@ -183,14 +174,16 @@ void loop(){//LCDの表示を制御
       break;
       
     case 1:
-      count = 1;
       print_flag = false;
-      lcd.clear();
-      lcd_print_string(testmode);
+      lcd_clear();
+      count = 1;
+      lcd.print(testmode);
       lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd.print(enter);
       standby2(button_select,button_enter);
       while(true){
+        lcd_clear();
+        lcd.print(testmode);
         if(read_digi(button_select)){
           mode = 2;
           break;
@@ -203,30 +196,27 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
-        if(count % 12 == 0){
-          print_flag = !print_flag;
-          if(print_flag){
-            lcd.setCursor(0, 1);
-            lcd_print_string(enter);
-            lcd_print_string("    ");
-          }
-          else{
-            lcd.setCursor(0, 1);
-            lcd_print_string(selectmanagement);
-          }
+        //切り替え実装
+        print_flag = !print_flag;
+        if(print_flag){
+          lcd.setCursor(0, 1);
+          lcd.print(enter);
+          lcd.print("    ");
         }
-        delay(100);
+        else{
+          lcd.setCursor(0, 1);
+          lcd.print(selectmanagement);
+        }
+        delay(400);
         count++;
       }
       break;
 
     case 10:
-      lcd.clear();
-      lcd_print_string(test1);
-      lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd_test1();
       standby(button_enter);
       while(true){
+        lcd_test1();
         if(read_digi(button_select)){
           mode = 11;
           break;
@@ -240,16 +230,15 @@ void loop(){//LCDの表示を制御
           mode = 1;
           break;
         }
+        delay(100);
       }
       break;
 
     case 11:
-      lcd.clear();
-      lcd_print_string(test2);
-      lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd_test2();
       standby(button_select);
       while(true){
+        lcd_test2();
         if(read_digi(button_select)){
           mode = 12;
           
@@ -264,16 +253,15 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
+        delay(100);
       }
       break;
       
     case 12:
-      lcd.clear();
-      lcd_print_string(test3);
-      lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd_test3();
       standby(button_select);
       while(true){
+        lcd_test3();
         if(read_digi(button_select)){
           mode = 2;
           break;
@@ -287,18 +275,21 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
+        delay(100);
       }
       break;
       
     case 2:
-      count = 1;
       print_flag = false;
-      lcd.clear();
-      lcd_print_string(management);
+      lcd_clear();
+      count = 1;
+      lcd.print(management);
       lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd.print(enter);
       standby(button_select);
       while(true){
+        lcd_clear();
+        lcd.print(management);
         if(read_digi(button_select)){
           mode = 3;
           break;
@@ -311,18 +302,18 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
-        if(count % 12 == 0){
-          print_flag = !print_flag;
-          if(print_flag){
-            lcd.setCursor(0, 1);
-            lcd_print_string(enter);
-          }
-          else{
-            lcd.setCursor(0, 1);
-            lcd_print_string(selectsetting);
-          }
+        //切り替え実装
+        print_flag = !print_flag;
+        if(print_flag){
+          lcd.setCursor(0, 1);
+          lcd.print(enter);
+          lcd.print("    ");
         }
-        delay(100);
+        else{
+          lcd.setCursor(0, 1);
+          lcd.print(selectsetting);
+        }
+        delay(400);
         count++;
       }
       break;
@@ -397,12 +388,14 @@ void loop(){//LCDの表示を制御
 
 
     case 3:
-      lcd.clear();
-      lcd_print_string(setting);
+      lcd_clear();
+      lcd.print(setting);
       lcd.setCursor(0, 1);
-      lcd_print_string(enter);
+      lcd.print(enter);
       standby(button_select);
       while(true){
+        lcd_clear();
+        lcd.print(setting);
         if(read_digi(button_select)){
           mode = 4;
           break;
@@ -415,18 +408,21 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
+        delay(100);
       }
       break;
 
     case 30:
-      count = 1;
       print_flag = false;
-      lcd.clear();
-      lcd_print_string(lcdbacklight);
+      lcd_clear();
+      count = 1;
+      lcd.print(lcdbacklight);
       lcd.setCursor(0, 1);
-      lcd_print_string(alwayson);
+      lcd.print(alwayson);
       standby(button_enter);
       while(true){
+        lcd_clear();
+        lcd.print(lcdbacklight);
         if(read_digi(button_enter)){      
           mode = 0;
           write_backlight_eco(false);
@@ -443,19 +439,17 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
-        if(count % 12 == 0){
-          print_flag = !print_flag;
-          if(print_flag){
-            lcd.setCursor(0, 1);
-            lcd.print(alwayson);
-          }
-          else
-          {
-            lcd.setCursor(0, 1);
-            lcd.print(ecomode);
-          }
+        //切り替え実装
+        print_flag = !print_flag;
+        if(print_flag){
+          lcd.setCursor(0, 1);
+          lcd.print(alwayson);
         }
-        delay(100);
+        else{
+          lcd.setCursor(0, 1);
+          lcd.print(ecomode);
+        }
+        delay(400);
         count++;
       }
       break;
@@ -473,7 +467,7 @@ bool read_digi(int port_num){//ボタン検出用の関数
   for(int i=0;i<=10;i++){
     if(digitalRead(port_num))
       on++;
-    delay(5);
+    delay(3);
   }
   if(on > 5){
     lcd_offtime = lcd_ontime + millis();
@@ -501,8 +495,8 @@ void standby3(int port_num,int port_num2,int port_num3){//ボタン入力後の�
 }
 
 void succsessfully(){//成功告知画面を表示する関数
-  lcd.clear();
-  lcd_print_string("succsessfully!");
+  lcd_clear();
+  lcd.print("succsessfully!");
   lcd.setCursor(0, 1);
   for(int i=0;i<=15;i++){
     lcd.print("*");
@@ -510,82 +504,94 @@ void succsessfully(){//成功告知画面を表示する関数
   }
 }
 
-void short_succsessfully(){//成功告知画面を表示する関数
-  lcd.clear();
-  lcd_print_string("succsessfully!");
-  lcd.setCursor(0, 1);
-  for(int i=0;i<=15;i++){
-    lcd.print("*");
-    delay(50);
-  }
-}
-
 bool status_lcd(){
-  lcd.clear();
+  lcd_clear();
   if(now_voltage < 10.0){
-    lcd_print_string(warning);
+    lcd.print(warning);
     lcd.setCursor(0, 1);
-    lcd_print_string(breakertripped);
+    lcd.print(breakertripped);
     return false;
   }
   else if(now_voltage < 80.0){
-    lcd_print_string(warning);
+    lcd.print(warning);
     lcd.setCursor(0, 1);
-    lcd_print_string(lowvoltage);
+    lcd.print(lowvoltage);
     return false;
   }
   else{
-    lcd_print_string(fine);
+    lcd.print(fine);
     lcd.setCursor(0, 1);
-    lcd_print_string("No Problem");
+    lcd.print("No Problem");
     return true;
   }
 }
 
 void lcd_power(){
-  lcd.clear();
-  lcd_print_string(powerstring);
+  lcd_clear();
+  lcd.print(powerstring);
   lcd.setCursor(0, 1);
-  lcd_print_double(now_power);
+  lcd.print(now_power);
   lcd.setCursor(7, 1);
-  lcd_print_string("[W]");
+  lcd.print("[W]");
+  if(stop_xbee)
+    lcd.print(" Lock");
   delay(200);
 }
 
 void lcd_factor(){
-  lcd.clear();
-  lcd_print_string(factorstring);
+  lcd_clear();
+  lcd.print(factorstring);
   lcd.setCursor(0, 1);
-  lcd_print_double(powerFactor*100.0);
+  lcd.print(powerFactor*100.0);
   lcd.setCursor(7, 1);
-  lcd_print_string("[%]");
+  lcd.print("[%]");
 }
 
 void lcd_va(){
-  lcd.clear();
-  lcd_print_string(vastring);
+  lcd_clear();
+  lcd.print(vastring);
   lcd.setCursor(0, 1);
-  lcd_print_double(va);
+  lcd.print(va);
   lcd.setCursor(7, 1);
-  lcd_print_string("[VA]");
+  lcd.print("[VA]");
 }
 
 void lcd_current(){
-  lcd.clear();
-  lcd_print_string(currentstring);
+  lcd_clear();
+  lcd.print(currentstring);
   lcd.setCursor(0, 1);
-  lcd_print_double(now_current);
+  lcd.print(now_current);
   lcd.setCursor(7, 1);
-  lcd_print_string("[A]");
+  lcd.print("[A]");
 }
 
 void lcd_voltage(){
-  lcd.clear();
-  lcd_print_string(voltagestring);
+  lcd_clear();
+  lcd.print(voltagestring);
   lcd.setCursor(0, 1);
-  lcd_print_double(now_voltage);
+  lcd.print(now_voltage);
   lcd.setCursor(7, 1);
-  lcd_print_string("[V]");
+  lcd.print("[V]");
 }
 
+void lcd_test1(){
+  lcd_clear();
+  lcd.print(test1);
+  lcd.setCursor(0, 1);
+  lcd.print(enter);
+}
+
+void lcd_test2(){
+  lcd_clear();
+  lcd.print(test2);
+  lcd.setCursor(0, 1);
+  lcd.print(enter);  
+}
+
+void lcd_test3(){
+  lcd_clear();
+  lcd.print(test3);
+  lcd.setCursor(0, 1);
+  lcd.print(enter);  
+}
 
