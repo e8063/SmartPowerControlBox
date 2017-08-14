@@ -1,4 +1,4 @@
-#define wait_time 900//ms
+#define wait_time 700//ms
 
 void utf_del_uni(char *s){//カナの文字コードをLCD用に変換する関数
     byte i=0;
@@ -18,9 +18,9 @@ void utf_del_uni(char *s){//カナの文字コードをLCD用に変換する関�
 void wait_lcd_func(){
   if(wait_lcd){
     wait_lcd = false;
-    unsigned int start_time = millis();
+    unsigned long start_time = millis();
     while(true){
-      if(start_time + wait_time < millis()){
+      if(start_time + wait_time <= millis()){
         break;
       }
       if(wait_lcd){

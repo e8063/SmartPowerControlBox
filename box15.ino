@@ -37,6 +37,7 @@ volatile unsigned long total_power = 0.0;
 bool stop_xbee = false;
 bool wait_lcd = false;
 bool lcd_backlight_eco;
+bool home_flug = false;
 unsigned long lcd_offtime = lcd_ontime + 3000;//30000;
 
 char enter[] = "Enter:ｹｯﾃｲ";
@@ -156,12 +157,14 @@ void loop(){//LCDの表示を制御
       lcd_power();
       standby2(button_select,button_enter);
     case 100:
+      home_flug = true;
       while(true){
         if(now_voltage <= 80.0)
           status_lcd();
         else
           lcd_power();
         if(read_digi(button_select)||read_digi(button_enter)){
+          home_flug = false;
           mode = 1;
           break;
         }
@@ -172,14 +175,14 @@ void loop(){//LCDの表示を制御
       break;
       
     case 1:
-      print_flag = false;
-      lcd_clear();
+      //print_flag = false;
+      lcd.clear();
       lcd.print(testmode);
       lcd.setCursor(0, 1);
       lcd.print(enter);
       standby2(button_select,button_enter);
       while(true){
-        lcd_clear();
+        lcd.clear();
         lcd.print(testmode);
         if(read_digi(button_select)){
           mode = 2;
@@ -277,13 +280,13 @@ void loop(){//LCDの表示を制御
       
     case 2:
       print_flag = false;
-      lcd_clear();
+      lcd.clear();
       lcd.print(management);
       lcd.setCursor(0, 1);
       lcd.print(enter);
       standby(button_select);
       while(true){
-        lcd_clear();
+        lcd.clear();
         lcd.print(management);
         if(read_digi(button_select)){
           mode = 3;
@@ -382,14 +385,10 @@ void loop(){//LCDの表示を制御
 
 
     case 3:
-      lcd_clear();
-      lcd.print(setting);
-      lcd.setCursor(0, 1);
-      lcd.print(enter);
+      lcd_setting();
       standby(button_select);
       while(true){
-        lcd_clear();
-        lcd.print(setting);
+        lcd_setting();
         if(read_digi(button_select)){
           mode = 4;
           break;
@@ -408,13 +407,13 @@ void loop(){//LCDの表示を制御
 
     case 30:
       print_flag = false;
-      lcd_clear();
+      lcd.clear();
       lcd.print(lcdbacklight);
       lcd.setCursor(0, 1);
       lcd.print(alwayson);
       standby(button_enter);
       while(true){
-        lcd_clear();
+        lcd.clear();
         lcd.print(lcdbacklight);
         if(read_digi(button_enter)){      
           mode = 0;
@@ -487,7 +486,7 @@ void standby3(int port_num,int port_num2,int port_num3){//ボタン入力後の�
 }
 
 void succsessfully(){//成功告知画面を表示する関数
-  lcd_clear();
+  lcd.clear();
   lcd.print("succsessfully!");
   lcd.setCursor(0, 1);
   for(int i=0;i<=15;i++){
@@ -531,7 +530,7 @@ void lcd_power(){
 }
 
 void lcd_factor(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(factorstring);
   lcd.setCursor(0, 1);
   lcd.print(powerFactor*100.0);
@@ -540,7 +539,7 @@ void lcd_factor(){
 }
 
 void lcd_va(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(vastring);
   lcd.setCursor(0, 1);
   lcd.print(va);
@@ -549,7 +548,7 @@ void lcd_va(){
 }
 
 void lcd_current(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(currentstring);
   lcd.setCursor(0, 1);
   lcd.print(now_current);
@@ -558,7 +557,7 @@ void lcd_current(){
 }
 
 void lcd_voltage(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(voltagestring);
   lcd.setCursor(0, 1);
   lcd.print(now_voltage);
@@ -567,23 +566,30 @@ void lcd_voltage(){
 }
 
 void lcd_test1(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(test1);
   lcd.setCursor(0, 1);
   lcd.print(enter);
 }
 
 void lcd_test2(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(test2);
   lcd.setCursor(0, 1);
   lcd.print(enter);  
 }
 
 void lcd_test3(){
-  lcd_clear();
+  lcd.clear();
   lcd.print(test3);
   lcd.setCursor(0, 1);
   lcd.print(enter);  
+}
+
+void lcd_setting(){
+  lcd.clear();
+  lcd.print(setting);
+  lcd.setCursor(0, 1);
+  lcd.print(enter);
 }
 

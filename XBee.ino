@@ -6,11 +6,13 @@ void xbee_loop(){//シリアル受信・送信を行う関数
   
   if(recieve){//モード転送
     SSerial.write(recieve);
-    lcd.clear();
-    lcd.print("Recieved:");
-    lcd.print("0x");
-    lcd.print(recieve[0],16);
-    wait_lcd = true;
+    if(home_flug){//ホームが表示されている時のみレシーブデータを表示
+      lcd.clear();
+      lcd.print("Recieved:");
+      lcd.print("0x");
+      lcd.print(recieve[0],16);
+      wait_lcd = true;
+    }
   }
   //wdt_reset();//ウォッチドッグタイマをリセット
   

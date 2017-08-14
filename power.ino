@@ -52,7 +52,7 @@ void sample(){
       va = 0;
       powerFactor = 0;
     }
-    total_power = total_power + (unsigned long)(now_power*1.0/*測定周期[s]*/ + 0.5/*四捨五入*/);
+    //total_power = total_power + (unsigned long)(now_power*1.0/*測定周期[s]*/ + 0.5/*四捨五入*/);
     resetSecValues();
   }
 }
