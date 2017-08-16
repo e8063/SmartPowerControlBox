@@ -1,8 +1,10 @@
 #include<XBeeLibrary.h>
 #include<SoftwareSerial.h>
 #include<LiquidCrystal.h>
+#include <KanaLiquidCrystal.h>
 #include<EEPROM.h>
-//#include<avr/wdt.h>
+#include<avr/wdt.h>
+#include <avr/pgmspace.h>
 #include <Scheduler.h>
 #include <TimerOne.h>
 XBeeLibrary XBee;
@@ -25,14 +27,13 @@ XBeeLibrary XBee;
 
 SoftwareSerial SSerial(6,5);//ソフトウェアシリアル
 
-LiquidCrystal lcd(7,8,9,10,11,12);//LCD
+KanaLiquidCrystal lcd(7,8,9,10,11,12);//LCD
 
 volatile double now_power = 0.0;
 volatile double now_voltage = 0.0;
 volatile double now_current = 0.0;
 volatile double powerFactor = 0.0;
 volatile double va = 0.0;
-volatile unsigned long total_power = 0.0;
 
 bool stop_xbee = false;
 bool wait_lcd = false;
@@ -40,28 +41,31 @@ bool lcd_backlight_eco;
 bool home_flug = false;
 unsigned long lcd_offtime = lcd_ontime + 3000;//30000;
 
-char enter[] = "Enter:ｹｯﾃｲ";
-char testmode[] = "ﾃｽﾄﾓｰﾄﾞ";
-char selectmanagement[] = "Select:ｼｽﾃﾑｶﾝﾘ";
-char test1[] = ">Test 1(ｾﾞﾝﾃﾝﾄｳ)";
-char test2[] = ">Test 2(ﾊﾟﾀｰﾝ)";
-char test3[] = ">Test 3(ｼｮｳﾄｳ)";
-char management[] = "ﾃﾞﾝﾘｮｸｶﾝﾘ";
-char setting[] = "ｾｯﾃｲ";
-char selectsetting[] ="Select:ｾｯﾃｲ";
-char powerstring[] = "ｼｮｳﾋﾃﾞﾝﾘｮｸ";
-char factorstring[] = ">ﾘｷﾘﾂ";
-char vastring[] = ">ﾋｿｳﾃﾞﾝﾘｮｸ";
-char alwayson[] ="Enter:ﾂﾈﾆﾃﾝﾄｳ";
-char ecomode[] ="Select:ｴｺﾓｰﾄﾞ";
-char lcdbacklight[] = "LCDﾊﾞｯｸﾗｲﾄ";
-char warning[] = "ｼﾞｮｳﾀｲ:ｹｲｺｸ!";
-char lowvoltage[] = "ﾃﾞﾝｱﾂｶﾞﾃｲｶｼﾃｲﾏｽ";
-char breakertripped[] = "ﾌﾞﾚｰｶｶﾞｵﾁﾃｲﾏｽ";
-char fine[] = "ｼｽﾃﾑﾊｾｲｼﾞｮｳﾃﾞｽ";
-char exitreturn[] = "ﾓﾄﾞﾙ:return";
-char currentstring[] = ">ﾃﾞﾝﾘｭｳ";
-char voltagestring[] = ">ﾃﾞﾝｱﾂ";
+//フラッシュメモリ上にカナ文字は格納(メモリ節約)
+const char enter[] PROGMEM = "Enter:ｹｯﾃｲ";
+const char testmode[] PROGMEM = "ﾃｽﾄﾓｰﾄﾞ";
+const char selectmanagement[] PROGMEM = "Select:ｼｽﾃﾑｶﾝﾘ";
+const char test1[] PROGMEM = ">Test 1(ｾﾞﾝﾃﾝﾄｳ)";
+const char test2[] PROGMEM = ">Test 2(ﾊﾟﾀｰﾝ)";
+const char test3[] PROGMEM = ">Test 3(ｼｮｳﾄｳ)";
+const char management[] PROGMEM = "ﾃﾞﾝﾘｮｸｶﾝﾘ";
+const char setting[] PROGMEM = "ｾｯﾃｲ";
+const char selectsetting[] PROGMEM ="Select:ｾｯﾃｲ";
+const char powerstring[] PROGMEM = "ｼｮｳﾋﾃﾞﾝﾘｮｸ";
+const char factorstring[] PROGMEM = ">ﾘｷﾘﾂ";
+const char vastring[] PROGMEM = ">ﾋｿｳﾃﾞﾝﾘｮｸ";
+const char alwayson[] PROGMEM ="Enter:ﾂﾈﾆﾃﾝﾄｳ";
+const char ecomode[] PROGMEM ="Select:ｴｺﾓｰﾄﾞ";
+const char lcdbacklight[] PROGMEM = "LCDﾊﾞｯｸﾗｲﾄ";
+const char warning[] PROGMEM = "ｼﾞｮｳﾀｲ:ｹｲｺｸ!";
+const char lowvoltage[] PROGMEM = "ﾃﾞﾝｱﾂｶﾞﾃｲｶｼﾃｲﾏｽ";
+const char breakertripped[] PROGMEM = "ﾌﾞﾚｰｶｶﾞｵﾁﾃｲﾏｽ";
+const char fine[] PROGMEM = "ｼｽﾃﾑﾊｾｲｼﾞｮｳﾃﾞｽ";
+const char exitreturn[] PROGMEM = "ﾓﾄﾞﾙ:return";
+const char currentstring[] PROGMEM = ">ﾃﾞﾝﾘｭｳ";
+const char voltagestring[] PROGMEM = ">ﾃﾞﾝｱﾂ";
+const char starttext1[] PROGMEM = "ﾏｲﾂﾞﾙｺｳｾﾝ";
+const char starttext2[] PROGMEM = "4E ｿｳｿﾞｳｺｳｶﾞｸ";
 
 byte mode = 100;
 /*
@@ -72,31 +76,6 @@ byte mode = 100;
   -> 11 blinks
   2 is configure mode 
 */
-
-void char_setup(){
-  utf_del_uni(enter);
-  utf_del_uni(testmode);
-  utf_del_uni(selectmanagement);
-  utf_del_uni(test1);
-  utf_del_uni(test2);
-  utf_del_uni(test3);
-  utf_del_uni(management);
-  utf_del_uni(setting);
-  utf_del_uni(selectsetting);
-  utf_del_uni(powerstring);
-  utf_del_uni(factorstring);
-  utf_del_uni(vastring);
-  utf_del_uni(alwayson);
-  utf_del_uni(ecomode);
-  utf_del_uni(lcdbacklight);
-  utf_del_uni(warning);
-  utf_del_uni(breakertripped);
-  utf_del_uni(lowvoltage);
-  utf_del_uni(fine);
-  utf_del_uni(exitreturn);
-  utf_del_uni(currentstring);
-  utf_del_uni(voltagestring);
-}
 
 void setup(){
   XBee.setup(true);
@@ -110,29 +89,23 @@ void setup(){
   pinMode(lcd_backlight,OUTPUT);
   digitalWrite(lcd_backlight,HIGH);
 
-  char_setup();
   lcd.begin(16, 2);
-
+  lcd.kanaOn();
   ADCSRA = ADCSRA & 0xf8;//A/Dコンバータの高速化
   ADCSRA = ADCSRA | 0x04;
   resetSecValues();
-
-  //Scheduler.startLoop(pattern_loop);
+  
   Scheduler.startLoop(xbee_loop);
   
   Timer1.initialize(SAMPLE_PERIOD_USEC);
   Timer1.attachInterrupt(sample);
   
   lcd_backlight_eco = read_backlight_eco();
-  
-  char text[] = "ﾏｲﾂﾞﾙｺｳｾﾝ";
-  utf_del_uni(text);
-  lcd.print(text);
+
+  lcd_print(starttext1);
 
   lcd.setCursor(0, 1);
-  char text1[] = "4E ｿｳｿﾞｳｺｳｶﾞｸ";
-  utf_del_uni(text1);
-  lcd.print(text1);
+  lcd_print(starttext2);
   
   delay(2000);
   lcd.clear();
@@ -146,7 +119,7 @@ void setup(){
   status_lcd();
   delay(2000);
   
-  //wdt_enable(WDTO_4S);//ウォッチドッグタイマーを有効化
+  wdt_enable(WDTO_4S);//ウォッチドッグタイマーを有効化
   
 }
 
@@ -177,13 +150,13 @@ void loop(){//LCDの表示を制御
     case 1:
       //print_flag = false;
       lcd.clear();
-      lcd.print(testmode);
+      lcd_print(testmode);
       lcd.setCursor(0, 1);
-      lcd.print(enter);
+      lcd_print(enter);
       standby2(button_select,button_enter);
       while(true){
         lcd.clear();
-        lcd.print(testmode);
+        lcd_print(testmode);
         if(read_digi(button_select)){
           mode = 2;
           break;
@@ -200,12 +173,12 @@ void loop(){//LCDの表示を制御
         print_flag = !print_flag;
         if(print_flag){
           lcd.setCursor(0, 1);
-          lcd.print(enter);
+          lcd_print(enter);
           lcd.print("    ");
         }
         else{
           lcd.setCursor(0, 1);
-          lcd.print(selectmanagement);
+          lcd_print(selectmanagement);
         }
         delay(400);
       }
@@ -281,13 +254,13 @@ void loop(){//LCDの表示を制御
     case 2:
       print_flag = false;
       lcd.clear();
-      lcd.print(management);
+      lcd_print(management);
       lcd.setCursor(0, 1);
-      lcd.print(enter);
+      lcd_print(enter);
       standby(button_select);
       while(true){
         lcd.clear();
-        lcd.print(management);
+        lcd_print(management);
         if(read_digi(button_select)){
           mode = 3;
           break;
@@ -304,12 +277,12 @@ void loop(){//LCDの表示を制御
         print_flag = !print_flag;
         if(print_flag){
           lcd.setCursor(0, 1);
-          lcd.print(enter);
+          lcd_print(enter);
           lcd.print("    ");
         }
         else{
           lcd.setCursor(0, 1);
-          lcd.print(selectsetting);
+          lcd_print(selectsetting);
         }
         delay(400);
       }
@@ -408,13 +381,13 @@ void loop(){//LCDの表示を制御
     case 30:
       print_flag = false;
       lcd.clear();
-      lcd.print(lcdbacklight);
+      lcd_print(lcdbacklight);
       lcd.setCursor(0, 1);
-      lcd.print(alwayson);
+      lcd_print(alwayson);
       standby(button_enter);
       while(true){
         lcd.clear();
-        lcd.print(lcdbacklight);
+        lcd_print(lcdbacklight);
         if(read_digi(button_enter)){      
           mode = 0;
           write_backlight_eco(false);
@@ -435,11 +408,11 @@ void loop(){//LCDの表示を制御
         print_flag = !print_flag;
         if(print_flag){
           lcd.setCursor(0, 1);
-          lcd.print(alwayson);
+          lcd_print(alwayson);
         }
         else{
           lcd.setCursor(0, 1);
-          lcd.print(ecomode);
+          lcd_print(ecomode);
         }
         delay(400);
       }
@@ -498,19 +471,19 @@ void succsessfully(){//成功告知画面を表示する関数
 bool status_lcd(){
   lcd_clear();
   if(now_voltage < 10.0){
-    lcd.print(warning);
+    lcd_print(warning);
     lcd.setCursor(0, 1);
-    lcd.print(breakertripped);
+    lcd_print(breakertripped);
     return false;
   }
   else if(now_voltage < 80.0){
-    lcd.print(warning);
+    lcd_print(warning);
     lcd.setCursor(0, 1);
-    lcd.print(lowvoltage);
+    lcd_print(lowvoltage);
     return false;
   }
   else{
-    lcd.print(fine);
+    lcd_print(fine);
     lcd.setCursor(0, 1);
     lcd.print("No Problem");
     return true;
@@ -519,7 +492,7 @@ bool status_lcd(){
 
 void lcd_power(){
   lcd_clear();
-  lcd.print(powerstring);
+  lcd_print(powerstring);
   lcd.setCursor(0, 1);
   lcd.print(now_power);
   lcd.setCursor(7, 1);
@@ -531,7 +504,7 @@ void lcd_power(){
 
 void lcd_factor(){
   lcd.clear();
-  lcd.print(factorstring);
+  lcd_print(factorstring);
   lcd.setCursor(0, 1);
   lcd.print(powerFactor*100.0);
   lcd.setCursor(7, 1);
@@ -540,7 +513,7 @@ void lcd_factor(){
 
 void lcd_va(){
   lcd.clear();
-  lcd.print(vastring);
+  lcd_print(vastring);
   lcd.setCursor(0, 1);
   lcd.print(va);
   lcd.setCursor(7, 1);
@@ -549,7 +522,7 @@ void lcd_va(){
 
 void lcd_current(){
   lcd.clear();
-  lcd.print(currentstring);
+  lcd_print(currentstring);
   lcd.setCursor(0, 1);
   lcd.print(now_current);
   lcd.setCursor(7, 1);
@@ -558,7 +531,7 @@ void lcd_current(){
 
 void lcd_voltage(){
   lcd.clear();
-  lcd.print(voltagestring);
+  lcd_print(voltagestring);
   lcd.setCursor(0, 1);
   lcd.print(now_voltage);
   lcd.setCursor(7, 1);
@@ -567,29 +540,29 @@ void lcd_voltage(){
 
 void lcd_test1(){
   lcd.clear();
-  lcd.print(test1);
+  lcd_print(test1);
   lcd.setCursor(0, 1);
-  lcd.print(enter);
+  lcd_print(enter);
 }
 
 void lcd_test2(){
   lcd.clear();
-  lcd.print(test2);
+  lcd_print(test2);
   lcd.setCursor(0, 1);
-  lcd.print(enter);  
+  lcd_print(enter);  
 }
 
 void lcd_test3(){
   lcd.clear();
-  lcd.print(test3);
+  lcd_print(test3);
   lcd.setCursor(0, 1);
-  lcd.print(enter);  
+  lcd_print(enter);  
 }
 
 void lcd_setting(){
   lcd.clear();
-  lcd.print(setting);
+  lcd_print(setting);
   lcd.setCursor(0, 1);
-  lcd.print(enter);
+  lcd_print(enter);
 }
 

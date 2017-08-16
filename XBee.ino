@@ -14,7 +14,7 @@ void xbee_loop(){//シリアル受信・送信を行う関数
       wait_lcd = true;
     }
   }
-  //wdt_reset();//ウォッチドッグタイマをリセット
+  wdt_reset();//ウォッチドッグタイマをリセット
   
   static bool led_flag = false;
   led_flag = !led_flag;
