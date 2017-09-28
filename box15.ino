@@ -7,6 +7,7 @@
 #include <avr/pgmspace.h>
 #include <Scheduler.h>
 #include <TimerOne.h>
+#include <MsTimer2.h>
 XBeeLibrary XBee;
 
 /*電力計測関係*/
@@ -22,8 +23,9 @@ XBeeLibrary XBee;
 #define refarence_vol A5//校正用電圧入力端子 2.5Vを入力
 
 #define lcd_backlight 4//LCDのバックライト制御ラインを接続する端子
-#define lcd_ontime 300000//LCDのバックライトの点灯時間[ms]
+#define lcd_ontime 30000//LCDのバックライトの点灯時間[ms]
 #define backlight_setting_address 0
+#define powersend_setting_address 1
 
 SoftwareSerial SSerial(6,5);//ソフトウェアシリアル
 
@@ -38,6 +40,7 @@ volatile double va = 0.0;
 bool stop_xbee = false;
 bool wait_lcd = false;
 bool lcd_backlight_eco;
+bool power_send;
 bool home_flug = false;
 unsigned long lcd_offtime = lcd_ontime + 3000;//30000;
 
@@ -48,9 +51,9 @@ const char selectmanagement[] PROGMEM = "Select:ｼｽﾃﾑｶﾝﾘ";
 const char test1[] PROGMEM = ">Test 1(ｾﾞﾝﾃﾝﾄｳ)";
 const char test2[] PROGMEM = ">Test 2(ﾊﾟﾀｰﾝ)";
 const char test3[] PROGMEM = ">Test 3(ｼｮｳﾄｳ)";
-const char management[] PROGMEM = "ﾃﾞﾝﾘｮｸｶﾝﾘ";
-const char setting[] PROGMEM = "ｾｯﾃｲ";
-const char selectsetting[] PROGMEM ="Select:ｾｯﾃｲ";
+const char management[] PROGMEM = "ﾃﾞﾝﾘｮｸﾓﾆﾀｰ";
+const char setting[] PROGMEM = "LCDﾉｾｯﾃｲ";
+const char selectsetting[] PROGMEM ="Select:LCDﾉｾｯﾃｲ";
 const char powerstring[] PROGMEM = "ｼｮｳﾋﾃﾞﾝﾘｮｸ";
 const char factorstring[] PROGMEM = ">ﾘｷﾘﾂ";
 const char vastring[] PROGMEM = ">ﾋｿｳﾃﾞﾝﾘｮｸ";
@@ -66,6 +69,11 @@ const char currentstring[] PROGMEM = ">ﾃﾞﾝﾘｭｳ";
 const char voltagestring[] PROGMEM = ">ﾃﾞﾝｱﾂ";
 const char starttext1[] PROGMEM = "ﾏｲﾂﾞﾙｺｳｾﾝ";
 const char starttext2[] PROGMEM = "4E ｿｳｿﾞｳｺｳｶﾞｸ";
+const char powersetting[] PROGMEM = "ﾃﾞﾝﾘｮｸｶﾝﾘ";
+const char powersend[] PROGMEM = "ﾃﾞﾝﾘｮｸｿｳｼﾝｷﾉｳ";
+const char powersendstring[] PROGMEM = "Enter:ｿｳｼﾝｽﾙ";
+const char powernotsendstring[] PROGMEM = "Select:ｿｳｼﾝｼﾅｲ";
+const char selectpower[] PROGMEM = "Select:ﾃﾞﾝﾘｮｸｶﾝﾘ";
 
 byte mode = 100;
 /*
@@ -80,7 +88,7 @@ byte mode = 100;
 void setup(){
   XBee.setup(true);
   XBee.setAddress(0x0013A200, 0x40B401BD);//1 Coordinator_address
-  Serial.begin(9600);
+  XBee.setAddress(0x0013A200, 0x406CB620);//2 Powermonitor_address
   SSerial.begin(9600);
   
   pinMode(13,OUTPUT);
@@ -95,13 +103,15 @@ void setup(){
   ADCSRA = ADCSRA | 0x04;
   resetSecValues();
   
+  lcd_backlight_eco = read_backlight_eco();
+  power_send = read_power_send();
+  
   Scheduler.startLoop(xbee_loop);
+  //Scheduler.startLoop(power_loop);
   
   Timer1.initialize(SAMPLE_PERIOD_USEC);
   Timer1.attachInterrupt(sample);
   
-  lcd_backlight_eco = read_backlight_eco();
-
   lcd_print(starttext1);
 
   lcd.setCursor(0, 1);
@@ -112,14 +122,16 @@ void setup(){
   lcd.print("Smart Power");
 
   lcd.setCursor(1, 1);
-  lcd.print("Control Unit");
+  lcd.print("Control Box");
 
   delay(2000);
   
   status_lcd();
   delay(2000);
   
-  wdt_enable(WDTO_4S);//ウォッチドッグタイマーを有効化
+  wdt_enable(WDTO_8S);//ウォッチドッグタイマーを有効化
+  MsTimer2::set(3000,power_func);
+  MsTimer2::start();
   
 }
 
@@ -358,10 +370,15 @@ void loop(){//LCDの表示を制御
 
 
     case 3:
-      lcd_setting();
+      print_flag = false;
+      lcd.clear();
+      lcd_print(setting);
+      lcd.setCursor(0, 1);
+      lcd_print(enter);
       standby(button_select);
       while(true){
-        lcd_setting();
+        lcd.clear();
+        lcd_print(setting);
         if(read_digi(button_select)){
           mode = 4;
           break;
@@ -374,8 +391,19 @@ void loop(){//LCDの表示を制御
           mode = 0;
           break;
         }
-        delay(100);
+        //切り替え実装
+        print_flag = !print_flag;
+        if(print_flag){
+          lcd.setCursor(0, 1);
+          lcd_print(enter);
+        }
+        else{
+          lcd.setCursor(0, 1);
+          lcd_print(selectpower);
+        }
+        delay(400);
       }
+      
       break;
 
     case 30:
@@ -416,8 +444,69 @@ void loop(){//LCDの表示を制御
         }
         delay(400);
       }
+      break; 
+      
+    case 4:
+      power_setting();
+      standby(button_select);
+      while(true){
+        power_setting();
+        if(read_digi(button_select)){
+          mode = 0;
+          break;
+        }
+        if(read_digi(button_enter)){          
+          mode = 40;
+          break;
+        }
+        if(read_digi(button_return)){
+          mode = 0;
+          break;
+        }
+        delay(100);
+      }
       break;
       
+    case 40:
+      print_flag = false;
+      lcd.clear();
+      lcd_print(powersend);
+      lcd.setCursor(0, 1);
+      lcd_print(powersendstring);
+      standby(button_enter);
+      while(true){
+        lcd.clear();
+        lcd_print(powersend);
+        if(read_digi(button_enter)){      
+          mode = 0;
+          write_power_send(true);
+          power_send = true;
+          break;
+        }
+        if(read_digi(button_select)){          
+          mode = 0;
+          write_power_send(false);
+          power_send = false;
+          break;
+        }
+        if(read_digi(button_return)){
+          mode = 0;
+          break;
+        }
+        //切り替え実装
+        print_flag = !print_flag;
+        if(print_flag){
+          lcd.setCursor(0, 1);
+          lcd_print(powersendstring);
+        }
+        else{
+          lcd.setCursor(0, 1);
+          lcd_print(powernotsendstring);
+        }
+        delay(400);
+      }
+      break; 
+    
     default:
       mode = 0;
       break;
@@ -559,9 +648,9 @@ void lcd_test3(){
   lcd_print(enter);  
 }
 
-void lcd_setting(){
+void power_setting(){
   lcd.clear();
-  lcd_print(setting);
+  lcd_print(powersetting);
   lcd.setCursor(0, 1);
   lcd_print(enter);
 }

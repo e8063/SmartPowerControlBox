@@ -56,3 +56,31 @@ void sample(){
     resetSecValues();
   }
 }
+
+void power_func(){
+  if(power_send){
+    char senddata[20];
+    char char_buf[10];
+    if(now_voltage < 10.0)
+      senddata[0] = 'B';//breakertripped
+    else if(now_voltage < 80.0)
+      senddata[0] = 'L';//Low voltage
+    else
+      senddata[0] = 'F';//fine
+    senddata[1] = '\0';
+    dtostrf(now_power,-1,2,char_buf);
+    strcat(senddata,char_buf);
+    XBee.sendMesseage(2,senddata);
+  }  
+}
+
+bool read_power_send(){
+  if(EEPROM.read(powersend_setting_address) == 0)
+    return false;
+  return true;
+}
+
+void write_power_send(bool value){
+  EEPROM.write(powersend_setting_address,value);
+  lcd_backlight_eco = value;
+}
