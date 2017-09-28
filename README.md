@@ -6,4 +6,8 @@
 
 https://github.com/mikaelpatel/Arduino-Scheduler
 
+https://playground.arduino.cc/Code/Timer1
+
+https://playground.arduino.cc/Main/MsTimer2
+
 https://synapse.kyoto/lib/KanaLiquidCrystal/page001.html
